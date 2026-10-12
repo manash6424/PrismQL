@@ -4,7 +4,6 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PRISM – Pricing</title>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
@@ -289,7 +288,7 @@
     <a href="#">Features</a>
     <a href="pricing.html" style="color:var(--text)">Pricing</a>
     <a href="about.html">About</a>
-    <a href="login.html" class="nav-cta">Get Started</a>
+    <a href="https://github.com/manash6424/prism-releases/releases/latest/download/PRISM-Setup.exe" class="nav-cta">Download Free</a>
   </div>
 </nav>
 
@@ -322,7 +321,7 @@
         <li><span class="na">✕</span> Marketing dashboard</li>
         <li><span class="na">✕</span> Team seats</li>
       </ul>
-      <a href="login.html" class="btn btn-outline">Get started free</a>
+      <a href="https://github.com/manash6424/prism-releases/releases/latest/download/PRISM-Setup.exe" class="btn btn-outline">Download free</a>
     </div>
 
     <!-- Pro -->
@@ -341,9 +340,7 @@
         <li><span class="check">✓</span> All export formats</li>
         <li><span class="na">✕</span> Team seats</li>
       </ul>
-      <button class="btn btn-primary" onclick="startCheckout('pro')" id="btn-pro">
-        Subscribe — ₹1499/mo
-      </button>
+            <a href="https://github.com/manash6424/prism-releases/releases/latest/download/PRISM-Setup.exe" class="btn btn-primary">Download &amp; upgrade in app</a>
     </div>
 
     <!-- Agency -->
@@ -361,9 +358,7 @@
         <li><span class="check">✓</span> WhatsApp report delivery</li>
         <li><span class="check">✓</span> Priority support</li>
       </ul>
-      <button class="btn btn-gold" onclick="startCheckout('team')" id="btn-team">
-        Subscribe — ₹2,499/mo
-      </button>
+            <a href="https://github.com/manash6424/prism-releases/releases/latest/download/PRISM-Setup.exe" class="btn btn-gold">Download &amp; upgrade in app</a>
     </div>
 
   </div>
@@ -424,113 +419,5 @@
 <footer>
   © 2025 PRISM · Made in India 🇮🇳 · <a href="privacy.html" style="color:inherit">Privacy</a> · support@prism.app
 </footer>
-
-<div class="toast" id="toast"></div>
-
-<script>
-  const RAZORPAY_KEY = 'rzp_test_YOUR_KEY_ID_HERE'; // swap to rzp_live_ before launch
-  const API_BASE     = 'https://your-api-domain.com/api/subscription'; // your deployed FastAPI
-
-  function getToken() {
-    const s = JSON.parse(localStorage.getItem('prism_session') || '{}');
-    return s?.access_token || '';
-  }
-  function getUser() {
-    const s = JSON.parse(localStorage.getItem('prism_session') || '{}');
-    return s?.user || {};
-  }
-
-  async function startCheckout(plan) {
-    const token = getToken();
-    if (!token) {
-      // Redirect to login, come back after
-      localStorage.setItem('post_login_redirect', 'pricing.html');
-      window.location.href = 'login.html';
-      return;
-    }
-
-    const btnId = plan === 'pro' ? 'btn-pro' : 'btn-team';
-    const btn   = document.getElementById(btnId);
-    const orig  = btn.textContent;
-    btn.disabled    = true;
-    btn.textContent = 'Creating order…';
-
-    try {
-      const res  = await fetch(`${API_BASE}/create-order`, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ plan }),
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.detail);
-
-      const order = data.order;
-      const user  = getUser();
-
-      const options = {
-        key:         RAZORPAY_KEY,
-        amount:      order.amount,
-        currency:    order.currency,
-        name:        'PRISM',
-        description: order.description,
-        order_id:    order.order_id,
-        prefill:     { email: user.email || '', name: user.user_metadata?.full_name || '' },
-        theme:       { color: '#6c63ff' },
-        handler: async (response) => {
-          await verifyPayment(response);
-        },
-        modal: {
-          ondismiss: () => {
-            btn.disabled = false;
-            btn.textContent = orig;
-          }
-        }
-      };
-
-      new Razorpay(options).open();
-
-    } catch (err) {
-      showToast(err.message || 'Something went wrong.', 'error');
-      btn.disabled    = false;
-      btn.textContent = orig;
-    }
-  }
-
-  async function verifyPayment(response) {
-    try {
-      const res  = await fetch(`${API_BASE}/verify-payment`, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({
-          razorpay_order_id:   response.razorpay_order_id,
-          razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_signature:  response.razorpay_signature,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('🎉 Subscription activated! Welcome to PRISM Pro.', 'success');
-        setTimeout(() => window.location.href = 'login.html', 2500);
-      } else {
-        showToast('Payment received but verification failed. Contact support.', 'error');
-      }
-    } catch (_) {
-      showToast('Verification error — contact support with your payment ID.', 'error');
-    }
-  }
-
-  function showToast(msg, type='success') {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className   = `toast ${type} show`;
-    setTimeout(() => t.classList.remove('show'), 5000);
-  }
-</script>
 </body>
 </html>
